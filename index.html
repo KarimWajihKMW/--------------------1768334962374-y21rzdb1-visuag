@@ -60,6 +60,23 @@
         0%, 100% { height: 4px; }
         50% { height: 16px; }
       }
+      
+      /* Tafsir Modal Animation */
+      #tafsir-modal {
+          transition: opacity 0.3s ease-in-out;
+      }
+      #tafsir-modal.hidden {
+          opacity: 0;
+          pointer-events: none;
+      }
+      #tafsir-modal:not(.hidden) {
+          opacity: 1;
+          pointer-events: auto;
+      }
+      .ayah-highlight:hover {
+          background-color: rgba(16, 185, 129, 0.1);
+          border-radius: 8px;
+      }
     </style>
 </head>
 <body class="bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-50 min-h-screen text-gray-800 pb-32">
@@ -118,6 +135,9 @@
                     <div class="w-full flex justify-center py-4">
                         <img src="https://upload.wikimedia.org/wikipedia/commons/2/27/Basmala.svg" alt="Bismillah" class="h-12 opacity-80">
                     </div>
+                    <div class="bg-emerald-50 inline-block px-4 py-1 rounded-full text-xs text-emerald-600 border border-emerald-100 animate-pulse">
+                        انقر على أي آية لعرض التفسير
+                    </div>
                 </div>
 
                 <div id="quran-content" class="quran-text text-3xl text-center text-gray-800 space-y-8 px-4 leading-loose">
@@ -146,6 +166,46 @@
             </div>
         </div>
     </main>
+
+    <!-- Tafsir Modal (New Feature) -->
+    <div id="tafsir-modal" class="hidden fixed inset-0 z-[60] flex items-center justify-center p-4">
+        <div class="absolute inset-0 bg-black/40 backdrop-blur-sm" id="tafsir-backdrop"></div>
+        <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[80vh] flex flex-col relative z-10 overflow-hidden transform transition-all scale-100">
+            
+            <!-- Modal Header -->
+            <div class="bg-gradient-to-l from-emerald-500 to-teal-600 p-6 text-white flex justify-between items-center">
+                <div>
+                    <h3 class="text-xl font-bold font-amiri" id="tafsir-title">تفسير الآية</h3>
+                    <p class="text-emerald-100 text-sm" id="tafsir-subtitle">التفسير الميسر</p>
+                </div>
+                <button id="close-tafsir" class="bg-white/20 hover:bg-white/30 text-white rounded-full p-2 transition-colors">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Modal Content -->
+            <div class="p-6 overflow-y-auto custom-scrollbar">
+                <!-- Original Ayah Text -->
+                <div class="mb-6 text-center border-b border-gray-100 pb-6">
+                     <p id="tafsir-ayah-text" class="font-amiri text-2xl text-gray-800 leading-relaxed"></p>
+                </div>
+                
+                <!-- Tafsir Text -->
+                <div id="tafsir-content-container">
+                    <div class="flex justify-center py-8" id="tafsir-loader">
+                        <div class="loader ease-linear rounded-full border-4 border-t-4 border-emerald-200 h-8 w-8"></div>
+                    </div>
+                    <p id="tafsir-text" class="text-gray-600 leading-8 text-lg hidden"></p>
+                </div>
+            </div>
+
+             <div class="bg-gray-50 p-4 text-center text-xs text-gray-400 border-t border-gray-100">
+                المصدر: مجمع الملك فهد لطباعة المصحف الشريف
+            </div>
+        </div>
+    </div>
 
     <!-- Audio Player Bar -->
     <div class="fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-lg border-t border-emerald-100 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.05)] p-4 transform transition-transform duration-300 translate-y-full" id="audio-player-container">
@@ -193,7 +253,7 @@
                 <span class="text-xs text-gray-500 font-mono" id="duration">0:00</span>
             </div>
 
-             <!-- Audio Visualizer (Fake) -->
+             <!-- Audio Visualizer -->
             <div class="hidden md:flex audio-wave opacity-0 transition-opacity duration-300" id="visualizer">
                 <div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div><div class="bar"></div>
             </div>
