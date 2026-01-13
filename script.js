@@ -21,6 +21,7 @@ let allSurahs = [];
 let currentAudio = null;
 let isPlaying = false;
 let currentSurahIndex = 0;
+let currentSurahAyahs = []; // To store Ayah texts for Tafsir
 
 async function initQuranApp() {
     const grid = document.getElementById('surah-grid');
@@ -54,6 +55,10 @@ async function initQuranApp() {
     document.getElementById('close-reading').addEventListener('click', closeReadingView);
     document.getElementById('prev-btn').addEventListener('click', playPrev);
     document.getElementById('next-btn').addEventListener('click', playNext);
+
+    // Tafsir Controls
+    document.getElementById('close-tafsir').addEventListener('click', closeTafsir);
+    document.getElementById('tafsir-backdrop').addEventListener('click', closeTafsir);
 
     // Fetch Data
     try {
@@ -140,6 +145,7 @@ async function openSurah(number, index) {
         const data = await response.json();
         
         if(data.code === 200) {
+            currentSurahAyahs = data.data.ayahs;
             let fullText = '';
             data.data.ayahs.forEach(ayah => {
                 // Remove Bismillah from beginning of text if it's not Fatiha (since we added it manually in header)
@@ -147,11 +153,17 @@ async function openSurah(number, index) {
                 if(number !== 1 && ayah.numberInSurah === 1) {
                     text = text.replace('بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ', '').trim();
                 }
-                fullText += `<span class="inline-block hover:text-emerald-700 transition-colors cursor-pointer" title="آية ${ayah.numberInSurah}">${text} <span class="text-emerald-500 text-xl mx-1">۝${toArabicNumerals(ayah.numberInSurah)}</span></span> `;
+                // Add onclick handler for Tafsir
+                fullText += `<span class="inline-block hover:text-emerald-700 hover:bg-emerald-50 rounded px-1 transition-all cursor-pointer ayah-highlight" 
+                                title="انقر لعرض التفسير" 
+                                onclick="openTafsir(${number}, ${ayah.numberInSurah})">
+                                ${text} <span class="text-emerald-500 text-xl mx-1">۝${toArabicNumerals(ayah.numberInSurah)}</span>
+                             </span> `;
             });
             content.innerHTML = fullText;
         }
     } catch (e) {
+        console.error(e);
         content.innerHTML = '<p class="text-red-500 text-lg">فشل تحميل النص القرآني.</p>';
     }
 }
@@ -160,6 +172,59 @@ function closeReadingView() {
     document.getElementById('reading-view').classList.add('hidden');
     document.body.style.overflow = 'auto';
 }
+
+// --- TAFSIR FUNCTIONS ---
+
+async function openTafsir(surahNum, ayahNum) {
+    const modal = document.getElementById('tafsir-modal');
+    const tafsirTitle = document.getElementById('tafsir-title');
+    const tafsirAyahText = document.getElementById('tafsir-ayah-text');
+    const tafsirText = document.getElementById('tafsir-text');
+    const tafsirLoader = document.getElementById('tafsir-loader');
+
+    // Show modal
+    modal.classList.remove('hidden');
+    
+    // Set Header Info
+    const surah = allSurahs.find(s => s.number === surahNum);
+    tafsirTitle.innerHTML = `سورة ${surah.name} <span class="text-sm text-emerald-100 font-normal mx-2">|</span> آية ${toArabicNumerals(ayahNum)}`;
+
+    // Set Ayah Text from cached data
+    const ayahObj = currentSurahAyahs.find(a => a.numberInSurah === ayahNum);
+    if (ayahObj) {
+        tafsirAyahText.textContent = ayahObj.text;
+    }
+
+    // Reset Tafsir content
+    tafsirText.classList.add('hidden');
+    tafsirLoader.classList.remove('hidden');
+
+    // Fetch Tafsir (Al-Muyassar)
+    try {
+        const response = await fetch(`https://api.alquran.cloud/v1/ayah/${surahNum}:${ayahNum}/ar.muyassar`);
+        const data = await response.json();
+
+        if (data.code === 200) {
+            tafsirText.textContent = data.data.text;
+            tafsirText.classList.remove('hidden');
+            tafsirLoader.classList.add('hidden');
+        } else {
+            throw new Error('Failed to load Tafsir');
+        }
+    } catch (error) {
+        tafsirText.textContent = "عذراً، لم نتمكن من تحميل التفسير في الوقت الحالي.";
+        tafsirText.classList.remove('hidden');
+        tafsirText.classList.add('text-red-500');
+        tafsirLoader.classList.add('hidden');
+    }
+}
+
+function closeTafsir() {
+    const modal = document.getElementById('tafsir-modal');
+    modal.classList.add('hidden');
+}
+
+// --- AUDIO FUNCTIONS ---
 
 function setupAudioPlayer(surah) {
     const audio = document.getElementById('audio-element');
